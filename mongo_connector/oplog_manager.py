@@ -278,15 +278,9 @@ class OplogThread(threading.Thread):
 
                                 # Update
                                 elif operation == 'u':
-                                    _id, error = docman.update(entry['o2']['_id'], entry['o'], namespace, timestamp)
-                                    if error:
-                                        if type(error) is NotFoundError:
-                                            LOG.warning("Document with id: %s not found in Elastic Search, re-upserting the document" % _id)
-                                            self.upsert_doc(docman, ns, timestamp, _id, None)
-                                        else:
-                                            LOG.warning("Failed to update document with id: %s, trying re-upsert" % _id)
-                                            self.upsert_doc(docman, ns, timestamp, _id, error)
                                     doc = entry.get('o')
+                                    if '_id' not in doc:
+                                        doc['_id'] = entry.['o2']['_id']
                                     doc['db'] = ns.split('.')[0]
                                     doc['collection'] = ns.split('.')[1]
                                     doc['operation'] = operation

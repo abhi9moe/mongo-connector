@@ -227,7 +227,7 @@ class DocManager(DocManagerBase):
         # No need to duplicate '_id' in source document
         self.mapGeoFields(doc)
         doc_id = u(doc.get("_id"))
-
+        doc.pop("_id")
         try:
             # Index the source document, using lowercase namespace as index name.
             self.elastic.index(index=index, doc_type=doc_type,

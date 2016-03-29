@@ -75,7 +75,7 @@ class DocManager(DocManagerBase):
 
         self.has_attachment_mapping = False
         self.attachment_field = attachment_field
-        self.refresh_interval = None
+        self.refresh_interval = 10
         self.index_created = False
         self.alias_added = False
         self.mutex = Lock()
@@ -226,18 +226,13 @@ class DocManager(DocManagerBase):
         index, doc_type = self._index_and_mapping(namespace)
         # No need to duplicate '_id' in source document
         self.mapGeoFields(doc)
-        doc_id = u(doc.get("_id"))
-        doc.pop("_id")
         try:
             # Index the source document, using lowercase namespace as index name.
             self.elastic.index(index=index, doc_type=doc_type,
-                               body=self._formatter.format_document(doc), id=doc_id,
-                               refresh=(self.auto_commit_interval == 0))
+                               body=self._formatter.format_document(doc))
         except es_exceptions.RequestError, e:
             LOG.info("Failed to upsert document: %r", e.info)
-            error = self.parseError(e.info['error'])
-            if(error):
-                return (doc_id, error['field_name'])
+            pass
         return None
 
     def mapGeoFields(self, doc):

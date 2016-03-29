@@ -253,7 +253,7 @@ class OplogThread(threading.Thread):
                                     doc['db'] = ns.split('.')[0]
                                     doc['collection'] = ns.split('.')[1]
                                     doc['operation'] = operation
-                                    self.upsert_doc(docman, ns, timestamp, doc['_id'], None, doc)
+                                    self.upsert_doc(docman, ns, timestamp, doc)
                                     remove_inc += 1
 
                                 # Insert
@@ -261,7 +261,6 @@ class OplogThread(threading.Thread):
                                     # Retrieve inserted document from
                                     # 'o' field in oplog record
                                     doc = {}
-                                    doc['_id'] = entry['o']['_id']
                                     doc['db'] = ns.split('.')[0]
                                     doc['collection'] = ns.split('.')[1]
                                     doc['operation'] = operation
@@ -274,20 +273,16 @@ class OplogThread(threading.Thread):
                                         docman.insert_file(
                                             gridfile, namespace, timestamp)
                                     else:
-                                        self.upsert_doc(docman, ns, timestamp, doc['_id'], None, doc)
+                                        self.upsert_doc(docman, ns, timestamp, doc)
                                     upsert_inc += 1
 
                                 # Update
                                 elif operation == 'u':
                                     doc = {}
-                                    if '_id' not in entry.get('o'):
-                                        doc['_id'] = entry['o2']['_id']
-                                    else:
-                                        doc['_id'] = entry['o']['_id']
                                     doc['db'] = ns.split('.')[0]
                                     doc['collection'] = ns.split('.')[1]
                                     doc['operation'] = operation
-                                    self.upsert_doc(docman, ns, timestamp, doc['_id'], None, doc)
+                                    self.upsert_doc(docman, ns, timestamp, doc)
                                     update_inc += 1
 
                                 # Command
@@ -460,27 +455,13 @@ class OplogThread(threading.Thread):
             except Exception:
                 LOG.warning("Error Field [%r] not found in doc: %r" % (field, doc))
 
-    def upsert_doc(self, dm, namespace, ts, _id, error_field, doc=None, retry_count=0):
+    def upsert_doc(self, dm, namespace, ts, doc=None):
         mapped_ns = self.dest_mapping.get(namespace, namespace)
-        doc_to_upsert = doc
-        if not doc_to_upsert and _id:
-            doc_to_upsert = self.get_failed_doc(namespace, _id)
-        if error_field:
-            self.error_fields[error_field] = self.error_fields.get(error_field, 0) + 1
-            self.remove_field_from_doc(doc_to_upsert, error_field)
-        if retry_count > 50:
-            raise Exception("Hit maximum retry attempts when trying to insert document: %r" % doc_to_upsert)
         try:
-            if doc_to_upsert:
-                error = dm.upsert(doc_to_upsert, mapped_ns)
-                if error:
-                    self.upsert_doc(dm, namespace, ts, error[0], error[1], doc_to_upsert, retry_count+1)
-            else:
-                LOG.error("Empty Document found: %r" % _id)
-            # self._fields['exclude'].remove(field)
-        except Exception, e:
-            LOG.critical("Failed to upsert document: %r due to error: %r" % (doc_to_upsert, e))
-            raise
+            error = dm.upsert(doc, mapped_ns)
+        except:
+            Log.error("failed to upsert %r" % doc)
+            pass
 
     def get_dump_set(self):
         dump_set = self.namespace_set or []
@@ -569,80 +550,6 @@ class OplogThread(threading.Thread):
                         pymongo.errors.OperationFailure):
                     attempts += 1
                     time.sleep(1)
-
-        def upsert_all_failed_docs(dm, namespace, errors):
-            if errors:
-                for _id, field in errors:
-                    self.upsert_doc(dm, namespace, long_ts, _id, field)
-
-        def upsert_each(dm):
-            num_inserted = 0
-            num_failed = 0
-            for namespace in dump_set:
-                mapped_ns = self.dest_mapping.get(namespace, namespace)
-                #dm.disable_refresh(mapped_ns)
-                for num, doc in enumerate(docs_to_dump(namespace)):
-                    if num % 10000 == 0:
-                        LOG.info("Upserted %d docs." % num)
-                    try:
-                        self.upsert_doc(dm, namespace, long_ts, None, None, doc)
-                        num_inserted += 1
-                    except Exception:
-                        if self.continue_on_error:
-                            LOG.exception("Could not upsert document: %r" % doc)
-                            num_failed += 1
-                        else:
-                            raise
-                #dm.enable_refresh(mapped_ns)
-            LOG.info("Upserted %d docs" % num_inserted)
-            if num_failed > 0:
-                LOG.error("Failed to upsert %d docs" % num_failed)
-
-        def upsert_all(dm):
-            try:
-                for namespace in dump_set:
-                    mapped_ns = self.dest_mapping.get(namespace, namespace)
-                    #dm.disable_refresh(mapped_ns)
-                    errors = dm.bulk_upsert(docs_to_dump(namespace), mapped_ns, long_ts)
-                    upsert_all_failed_docs(dm, namespace, errors)
-                    #dm.enable_refresh(mapped_ns)
-            except Exception:
-                if self.continue_on_error:
-                    LOG.exception("OplogThread: caught exception"
-                                  " during bulk upsert, re-upserting"
-                                  " documents serially")
-                    upsert_each(dm)
-                else:
-                    raise
-
-        def do_dump(dm, error_queue):
-            try:
-                # Dump the documents, bulk upsert if possible
-                if hasattr(dm, "bulk_upsert"):
-                    LOG.debug("OplogThread: Using bulk upsert function for "
-                              "collection dump")
-                    upsert_all(dm)
-                else:
-                    LOG.debug(
-                        "OplogThread: DocManager %s has no "
-                        "bulk_upsert method.  Upserting documents "
-                        "serially for collection dump." % str(dm))
-                    upsert_each(dm)
-
-                # Dump GridFS files
-                for gridfs_ns in self.gridfs_set:
-                    db, coll = gridfs_ns.split('.', 1)
-                    mongo_coll = self.primary_client[db][coll]
-                    dest_ns = self.dest_mapping.get(gridfs_ns, gridfs_ns)
-                    for doc in docs_to_dump(gridfs_ns + '.files'):
-                        gridfile = GridFSFile(mongo_coll, doc)
-                        dm.insert_file(gridfile, dest_ns, long_ts)
-            except:
-                # Likely exceptions:
-                # pymongo.errors.OperationFailure,
-                # mongo_connector.errors.ConnectionFailed
-                # mongo_connector.errors.OperationFailed
-                error_queue.put(sys.exc_info())
 
         # Extra threads (if any) that assist with collection dumps
         dumping_threads = []

@@ -18,11 +18,11 @@ DEFAULT_BATCH_SIZE = -1
 
 # Interval in seconds between doc manager flushes (i.e. auto commit)
 # default = None (never auto commit)
-DEFAULT_COMMIT_INTERVAL = None
+DEFAULT_COMMIT_INTERVAL = 10
 
 # Maximum # of documents to send in a single bulk request through a
 # DocManager.
-DEFAULT_MAX_BULK = 1000
+DEFAULT_MAX_BULK = 100
 
 # The default MongoDB field that will serve as the unique key for the
 # target system.

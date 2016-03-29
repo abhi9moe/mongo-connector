@@ -250,8 +250,10 @@ class OplogThread(threading.Thread):
 
                                 # Remove
                                 if operation == 'd':
-                                    docman.remove(
-                                        entry['o']['_id'], namespace, timestamp)
+                                    doc['db'] = ns.split('.')[0]
+                                    doc['collection'] = ns.split('.')[1]
+                                    doc['operation'] = operation
+                                    self.upsert_doc(docman, ns, timestamp, doc['_id'], None, doc)
                                     remove_inc += 1
 
                                 # Insert
@@ -259,6 +261,9 @@ class OplogThread(threading.Thread):
                                     # Retrieve inserted document from
                                     # 'o' field in oplog record
                                     doc = entry.get('o')
+                                    doc['db'] = ns.split('.')[0]
+                                    doc['collection'] = ns.split('.')[1]
+                                    doc['operation'] = operation
                                     # Extract timestamp and namespace
                                     if is_gridfs_file:
                                         db, coll = ns.split('.', 1)
@@ -281,6 +286,13 @@ class OplogThread(threading.Thread):
                                         else:
                                             LOG.warning("Failed to update document with id: %s, trying re-upsert" % _id)
                                             self.upsert_doc(docman, ns, timestamp, _id, error)
+                                    doc = entry.get('o')
+                                    doc['db'] = ns.split('.')[0]
+                                    doc['collection'] = ns.split('.')[1]
+                                    doc['operation'] = operation
+                                    docman.remove(
+                                        entry['o']['_id'], namespace, timestamp)
+                                    self.upsert_doc(docman, ns, timestamp, doc['_id'], None, doc)
                                     update_inc += 1
 
                                 # Command

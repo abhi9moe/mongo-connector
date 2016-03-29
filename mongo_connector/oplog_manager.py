@@ -280,7 +280,7 @@ class OplogThread(threading.Thread):
                                 elif operation == 'u':
                                     doc = entry.get('o')
                                     if '_id' not in doc:
-                                        doc['_id'] = entry.['o2']['_id']
+                                        doc['_id'] = entry['o2']['_id']
                                     doc['db'] = ns.split('.')[0]
                                     doc['collection'] = ns.split('.')[1]
                                     doc['operation'] = operation

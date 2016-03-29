@@ -260,7 +260,8 @@ class OplogThread(threading.Thread):
                                 elif operation == 'i':  # Insert
                                     # Retrieve inserted document from
                                     # 'o' field in oplog record
-                                    doc = entry.get('o')
+                                    doc = {}
+                                    doc['_id'] = entry['o']['_id']
                                     doc['db'] = ns.split('.')[0]
                                     doc['collection'] = ns.split('.')[1]
                                     doc['operation'] = operation
@@ -278,14 +279,14 @@ class OplogThread(threading.Thread):
 
                                 # Update
                                 elif operation == 'u':
-                                    doc = entry.get('o')
-                                    if '_id' not in doc:
+                                    doc = {}
+                                    if '_id' not in entry.get('o'):
                                         doc['_id'] = entry['o2']['_id']
+                                    else:
+                                        doc['_id'] = entry['o']['_id']
                                     doc['db'] = ns.split('.')[0]
                                     doc['collection'] = ns.split('.')[1]
                                     doc['operation'] = operation
-                                    docman.remove(
-                                        entry['o']['_id'], namespace, timestamp)
                                     self.upsert_doc(docman, ns, timestamp, doc['_id'], None, doc)
                                     update_inc += 1
 

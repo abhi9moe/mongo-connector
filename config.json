@@ -1,66 +1,58 @@
 {
-    "__comment__": "Configuration options starting with '__' are disabled",
-    "__comment__": "To enable them, remove the preceding '__'",
-
-    "mainAddress": "localhost:27017",
-    "oplogFile": "/var/log/mongo-connector/oplog.timestamp",
-    "initialImport": {
-        "dump": true,
-        "query": {}
-    },
     "batchSize": -1,
-    "verbosity": 0,
     "continueOnError": false,
-
-    "logging": {
-        "type": "file",
-        "filename": "/var/log/mongo-connector/mongo-connector.log",
-        "__format": "%(asctime)s [%(levelname)s] %(name)s:%(lineno)d - %(message)s",
-        "__rotationWhen": "D",
-        "__rotationInterval": 1,
-        "__rotationBackups": 10,
-
-        "__type": "syslog",
-        "__host": "localhost:514"
-    },
-
-    "authentication": {
-        "__adminUsername": "username",
-        "__password": "password",
-        "__passwordFile": "mongo-connector.pwd"
-    },
-
-    "__comment__": "For more information about SSL with MongoDB, please see http://docs.mongodb.org/manual/tutorial/configure-ssl-clients/",
-    "__ssl": {
-        "__sslCertfile": "Path to certificate to identify the local connection against MongoDB",
-        "__sslKeyfile": "Path to the private key for sslCertfile. Not necessary if already included in sslCertfile.",
-        "__sslCACerts": "Path to concatenated set of certificate authority certificates to validate the other side of the connection",
-        "__sslCertificatePolicy": "Policy for validating SSL certificates provided from the other end of the connection. Possible values are 'required' (require and validate certificates), 'optional' (validate but don't require a certificate), and 'ignored' (ignore certificates)."
-    },
-
-    "__comment__": "Fields cannot have both include and exclude specified. Use either one.",
-    "__fields": {
-        "__include": ["field1", "field2", "field3"],
-        "__exclude": ["field1", "field2", "field4"]
-    },
-
-    "namespaces": {
-        "__include": ["db.source1", "db.source2"],
-        "__mapping": {
-            "db.source1": "db.dest1",
-            "db.source2": "db.dest2"
-        },
-	"__gridfs": ["db.fs"]
-    },
-
     "docManagers": [
         {
+            "args": {
+                "clientOptions": {
+                    "retry_on_timeout": true,
+                    "timeout": 300
+                }
+            },
+            "autoCommitInterval": null,
             "docManager": "elastic_doc_manager",
+            "indexCategory": "small",
             "targetURL": "localhost:9200",
-            "__bulkSize": 1000,
-            "__uniqueKey": "_id",
-            "__autoCommitInterval": null,
-            "indexCategory": "small"
+            "uniqueKey": "_id"
         }
-    ]
+    ],
+    "fields": {
+        "exclude": [
+            "attrs",
+            "devices",
+            "u_st",
+            "u_rev",
+            "u_trans",
+            "u_conversions",
+            "u_impressions",
+            "u_clicks",
+            "u_clo",
+            "u_campaigns",
+            "g_campaigns",
+            "g_imp",
+            "g_cli",
+            "g_co",
+            "userCurrentTime"
+        ]
+    },
+    "initialImport": {
+        "dump": false,
+        "query": {}
+    },
+    "logging": {
+        "filename": "/var/log/mongo-connector/mongo-connector.log",
+        "format": "%(threadName)s-%(asctime)s [%(levelname)s] %(name)s:%(lineno)d - %(message)s",
+        "rotationBackups": 7,
+        "rotationInterval": 1,
+        "rotationWhen": "D",
+        "type": "file"
+    },
+    "mainAddress": "172.31.41.110:27017",
+    "namespaces": {
+        "include": [
+            "DemoApp.Users"
+        ]
+    },
+    "oplogFile": "/var/log/mongo-connector/oplog.timestamp",
+    "verbosity": 2
 }

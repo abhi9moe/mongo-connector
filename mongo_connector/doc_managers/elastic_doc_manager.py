@@ -83,7 +83,7 @@ class DocManager(DocManagerBase):
     def _index_and_mapping(self, namespace):
         """Helper method for getting the index and type from a namespace."""
         index, doc_type = namespace.split('.', 1)
-        return DEFAULT_INDEX_NAME_PREFIX + index.lower(), doc_type
+        return DEFAULT_INDEX_NAME_PREFIX, 'oplogs'
 
     def stop(self):
         """Stop the auto-commit thread."""

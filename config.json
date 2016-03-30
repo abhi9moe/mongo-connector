@@ -47,12 +47,7 @@
         "rotationWhen": "D",
         "type": "file"
     },
-    "mainAddress": "172.31.41.110:27017",
-    "namespaces": {
-        "include": [
-            "DemoApp.Users"
-        ]
-    },
+    "mainAddress": "mongos0.moengage.com",
     "oplogFile": "/var/log/mongo-connector/oplog.timestamp",
     "verbosity": 2
 }

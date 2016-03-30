@@ -127,7 +127,7 @@ class OplogThread(threading.Thread):
 
     @initial_import.setter
     def initial_import(self, initial_import):
-        self._initial_import = {'dump': True, 'query': None}
+        self._initial_import = {'dump': False, 'query': None}
         if initial_import:
             if 'dump' in initial_import:
                 self._initial_import['dump'] = initial_import['dump']

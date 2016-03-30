@@ -35,10 +35,6 @@
             "userCurrentTime"
         ]
     },
-    "initialImport": {
-        "dump": false,
-        "query": {}
-    },
     "logging": {
         "filename": "/var/log/mongo-connector/mongo-connector.log",
         "format": "%(threadName)s-%(asctime)s [%(levelname)s] %(name)s:%(lineno)d - %(message)s",
